@@ -108,7 +108,7 @@ while True:
             value += fire.get(x+1, y-1)
             value += fire.get(x, y-2)
             value = int(value / FLAME_DIVISOR)
-            fire.set(x, y, value)
+            #fire.set(x, y, value)
 
     # Convert the fire intensity values to neopixel colors and update the pixels:
     for x in range(PIXEL_WIDTH):
