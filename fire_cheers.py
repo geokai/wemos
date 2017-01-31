@@ -3,42 +3,47 @@
 
 # This file was created on 29/01/17
 # Author: George Kaimakis
+# http://github.com/geokai/wemos
 
 
+# modules:
 import machine
 import neopixel
 import uos
 from time import sleep_ms
 
-
+# variables:
 PIXEL_PIN       = 0
 PIXEL_WIDTH     = 4
 PIXEL_HEIGHT    = 4
 FLAME_DIVISOR   = 16.2
-HUE             = 0
+CUR_HUE         = 0
+PRE_HUE         = 0
 RECV_COLOR      = ''
 
-host            = 'http://api.thingspeak.com'
+host            = 'http://api.thingspeak.com'   # Cheerlights API location:
 port            = 80
 
 
-
-# colors received from cheerlights broker with associated hue values:
+# look-up lists:
+# colors received from cheerlights API with associated hue values:
 flames = {'red':0, 'orange':11, 'yellow':22, 'green':80, 'cyan':110,
 'blue':165, 'purple':190, 'magenta':224, 'pink':244}
 
 whites = {'white':'val_0', 'oldlace':'val_1', 'warmwhite':'val_2'}
 
 # determine value for HUE based on color received from broker:
-if RECV_COLOR in flames:
-    HUE = flames[color]
-elif RECV_COLOR in whites:
-    HUE = whites[color]
-else:
-    print('Invalid color')
+#if RECV_COLOR in flames:
+#    HUE = flames[color]
+#elif RECV_COLOR in whites:
+#    HUE = whites[color]
+#else:
+#    print('Invalid color')
 
-###--- color space conversion functions - hsl to rgb ---###
 
+###--- definitions ---###
+
+# color space conversion functions - hsl to rgb:
 def hue2rgb(p, q, t):
     # Helper for the HSL_to_RGB function:
     # From http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
@@ -77,7 +82,37 @@ def HSL_to_RGB(h, s, l):
     return (int(r*255.0), int(g*255.0), int(b*255.0))
 
 
-###---  set-up of objects  ---###
+# Create a color palette of flame colors:
+def fl_palette():
+    palette_f = []
+    for x in range(256):
+        palette_f.append(HSL_to_RGB(CUR_HUE + (x // 8), 255, min(255, x * 2)))
+        print(palette_f[x])
+
+# Create a color palette of white colors:
+def wh_palette():
+    palette_w = []
+    for x in range(256):
+        palette_w.append(HSL_to_RGB(CUR_HUE + (x // 8), 255, min(255, x * 2)))
+        print(palette_w[x])
+
+# Create a color palette of warm-white colors:
+def wm_palette():
+    palette_wm = []
+    for x in range(256):
+        palette_wm.append(HSL_to_RGB(CUR_HUE + (x // 8), 255, min(255, x * 2)))
+        print(palette_wm[x])
+
+# transistion smoothly between color sets:
+def hue_transistion():
+    # transistion from previous to current hue setting:
+    return
+
+# establish connection with API and request payload:
+def api_query():
+    return
+
+###---  set-up of objects and initializations  ---###
 
 class FireMatrix:
 
@@ -98,28 +133,21 @@ class FireMatrix:
 
 # Initiallize neopixels and clear any lit pixels:
 np = neopixel.NeoPixel(machine.Pin(PIXEL_PIN), PIXEL_WIDTH * PIXEL_HEIGHT)
-np.fill((0,0,0))
+np.fill((0,0,0))    # Assumes a 3 component neopixel - rgb only
 np.write()
 
-# Create a color palette of flame colors:
-palette_f = []
-for x in range(256):
-    palette_f.append(HSL_to_RGB(HUE + (x // 8), 255, min(255, x * 2)))
-    print(palette_f[x])
-
-# Create a color palette of white colors:
-#palette_w = []
-#for x in range(256):
-#    palette_w.append(HSL_to_RGB(HUE + (x // 8), 255, max(128, x * 2)))
-#    print(palette_w[x])
-
 # Create fire matrix:
-fire = FireMatrix(PIXEL_WIDTH, PIXEL_HEIGHT+1)
+fire = FireMatrix(PIXEL_WIDTH, PIXEL_HEIGHT+1)  # Adds an extra line to push
+                                                # initial setting line out of view:
 
 
-###---  the animation  ---###
+###---  the main loop  ---###
 
 while True:
+    # establish connection with API and request payload:
+    # compare current (received) payload with previous:
+    # if current payload is different recreate color palette and run transition:
+
     # set the bottom row to random intensity values (0 to 255):
     for x in range(PIXEL_WIDTH):
         fire.set(x, PIXEL_HEIGHT, int(uos.urandom(1)[0]))
@@ -132,7 +160,7 @@ while True:
             value += fire.get(x+1, y-1)
             value += fire.get(x, y-2)
             value = int(value / FLAME_DIVISOR)
-            #fire.set(x, y, value)
+            fire.set(x, y, value)
 
     # Convert the fire intensity values to neopixel colors and update the pixels:
     for x in range(PIXEL_WIDTH):
