@@ -8,58 +8,55 @@
 
 ###--
 #       The Cheerlights feed from thingspeak.com is in the form of a text
-#       string on a web page in json format.
+#       string on a web page in json format,
+#       the entire feed, https://thingspeak.com/channels/1417/feed.json
+#       the last 'word' entry, api.thingspeak.com/channels/1417/field/1/last.json
+#       the last 'hex' entry, api.thingspeak.com/channels/1417/field/2/last.json
 #       Once the pages' contents are obtained, the ujson module can be used to
 #       convert the string to a 'dict' object. The relevant value can then be
 #       extracted using 'key' indexing.
+#       A second thread will be used to make a request to the api at a set interval
+#       separate from the main animation 'while' loop and other 'free' running
+#       functions.
 ###--
 
 # modules:
 import machine
 import neopixel
 import uos
-from time import sleep_ms
-import ujson
-import urequests
+import time
+#import ujson
+#import urequests
+#import threading
 
-# variables:
-PIXEL_PIN       = 0
-PIXEL_WIDTH     = 4
-PIXEL_HEIGHT    = 4
-FLAME_DIVISOR   = 16.2
-PREV_COLOR      = ''
-RECVD_COLOR     = ''
-CUR_HUE         = 0
-PREV_HUE        = 0
-PALETTE         = ''
+# global 'setup' variables:
+PIXEL_PIN           = 0
+PIXEL_WIDTH         = 4
+PIXEL_HEIGHT        = 4
+FLAME_DIVISOR       = 16.2
+RECVD_COLOR         = 'orange'
+PREV_COLOR          = ''
+CUR_HUE             = 0
+PREV_HUE            = 0
 
-host            = 'http://api.thingspeak.com'   # Cheerlights API location:
-port            = 80
+# these variables keep track of elapsed time to control the 'request' loop:
+#PREVIOUS_MILLIS     = 0
+#CURRENT_MILLIS      = 0
+#REQUEST_INTERVAL    = 5000
+#WAIT                = 1000
+
+#host                = 'api.thingspeak.com/'   # Cheerlights API location:
+#port                = 80
 
 
 # look-up dicts:
 # colors received from cheerlights API with associated hue values:
-flames = {'red':0, 'orange':11, 'yellow':22, 'green':80, 'cyan':110,
+flames = {'red':0, 'orange':10, 'yellow':22, 'green':80, 'cyan':110,
 'blue':165, 'purple':190, 'magenta':224, 'pink':244}
 
 white = {'white':'val_0'}
 
 warmwhite = {'oldlace':'val_1', 'warmwhite':'val_2'}
-
-
-# determine value for CUR_HUE based on color received from broker:
-#if RECVD_COLOR in flames:
-#    CUR_HUE = flames[color]
-#    fl_palette(CUR_HUE)
-#elif RECVD_COLOR in white:
-#    CUR_HUE = white[color]
-#    wh_palette(CUR_HUE)
-#elif RECVD_COLOR in warmwhite:
-#    CUR_HUE = warmwhite[color]
-#    wm_palette(CUR_HUE)
-#else:
-#    print('Invalid color')
-#    pass
 
 
 ###--- definitions ---###
@@ -109,8 +106,7 @@ def fl_palette(h_offset):
     for x in range(256):
         palette_fl.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
         #print(palette_fl[x])
-        PALETTE = palette_fl
-        return(PALETTE)
+    return palette_fl
 
 # Create a color palette of white colors:
 def wh_palette(h_offset):
@@ -118,8 +114,7 @@ def wh_palette(h_offset):
     for x in range(256):
         palette_wh.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
         #print(palette_wh[x])
-        PALETTE = palette_wh
-        return(PALETTE)
+    return palette_wh
 
 # Create a color palette of warm-white colors:
 def wm_palette(h_offset):
@@ -127,8 +122,7 @@ def wm_palette(h_offset):
     for x in range(256):
         palette_wm.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
         #print(palette_wm[x])
-        PALETTE = palette_wm
-        return(PALETTE)
+    return palette_wm
 
 # transistion smoothly between color sets:
 def hue_transistion():
@@ -163,20 +157,41 @@ np = neopixel.NeoPixel(machine.Pin(PIXEL_PIN), PIXEL_WIDTH * PIXEL_HEIGHT)
 np.fill((0,0,0))    # Assumes a 3 component neopixel - rgb only
 np.write()
 
+# determine value for CUR_HUE based on color received from broker and call
+# palette function:
+if RECVD_COLOR in flames:
+    CUR_HUE = flames[RECVD_COLOR]
+    PALETTE = fl_palette(CUR_HUE)
+
+elif RECVD_COLOR in white:
+    CUR_HUE = white[RECVD_COLOR]
+    PALETTE = wh_palette(CUR_HUE)
+
+elif RECVD_COLOR in warmwhite:
+    CUR_HUE = warmwhite[RECVD_COLOR]
+    PALETTE = wm_palette(CUR_HUE)
+
+else:
+    #print('Invalid color')
+    pass
+
 # Create fire matrix:
 fire = FireMatrix(PIXEL_WIDTH, PIXEL_HEIGHT+1)  # Adds an extra line to push
                                                 # initial random setting line out
                                                 # of view:
 
+# test delay function:
+def test_delay(delay):
+    time.sleep_ms(delay)
+
+
+###---  multi-threaded api call  ---###
+
+
 
 ###---  the main loop  ---###
 
 while True:
-    # establish connection with API and request payload:
-    # compare current (received) payload with previous:
-    # if current payload is different recreate color palette and run transition:
-    ##- As these loops run fairly fast, a timing loop is needed to prevent the 
-    #   the api call being made every time through.
 
 ###---   the animation loop  ---###
     # set the bottom row to random intensity values (0 to 255):
@@ -198,4 +213,13 @@ while True:
         for y in range(PIXEL_HEIGHT):
             np[y * PIXEL_WIDTH + x] = PALETTE[fire.get(x, y)]
     np.write()
-    sleep_ms(50)
+
+    # As these loops run fairly fast, a timing loop is needed to prevent the 
+    # api call being made every time through the while loop.
+    # control loop for the api get request:
+        # request the contents of the last cheerlights channel feed:
+        # extract the color name as a string and asign to a variable:
+        # compare current (received) color value with previous:
+        # if current value is different, recreate color palette (and run transition):
+
+    time.sleep_ms(50)       # main loop period control:
