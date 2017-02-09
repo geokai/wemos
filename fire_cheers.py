@@ -34,16 +34,16 @@ PIXEL_PIN           = 0
 PIXEL_WIDTH         = 4
 PIXEL_HEIGHT        = 4
 FLAME_DIVISOR       = 16.2
-RECVD_COLOR         = 'cyan'
+RECVD_COLOR         = 'yellow'
 PREV_COLOR          = ''
 CUR_HUE             = 0
 PREV_HUE            = 0
 
 # these variables keep track of elapsed time to control the 'request' loop:
-#PREVIOUS_MILLIS     = 0
-#CURRENT_MILLIS      = 0
-#REQUEST_INTERVAL    = 5000
-#WAIT                = 1000
+PREVIOUS_MILLIS     = 0
+CURRENT_MILLIS      = 0
+REQUEST_INTERVAL    = 5
+WAIT                = 1000
 
 #host                = 'api.thingspeak.com/'   # Cheerlights API location:
 #port                = 80
@@ -215,6 +215,10 @@ while True:
     np.write()
 
     # As these loops run fairly fast, a timing loop is needed to prevent the 
+    CURRENT_MILLIS = time.time()
+    if CURRENT_MILLIS - PREVIOUS_MILLIS >= REQUEST_INTERVAL:
+        test_delay(WAIT)
+        PREVIOUS_MILLIS = CURRENT_MILLIS
     # api call being made every time through the while loop.
     # control loop for the api get request:
         # request the contents of the last cheerlights channel feed:
