@@ -25,8 +25,8 @@ import machine
 import neopixel
 import uos
 import time
+import urequests
 #import ujson
-#import urequests
 #import threading
 
 # global 'setup' variables:
@@ -34,8 +34,8 @@ PIXEL_PIN           = 0
 PIXEL_WIDTH         = 4
 PIXEL_HEIGHT        = 4
 FLAME_DIVISOR       = 16.2
-RECVD_COLOR         = 'yellow'
-PREV_COLOR          = ''
+RECVD_COLOR         = 'red'
+PREV_COLOR          = 'red'
 CUR_HUE             = 0
 PREV_HUE            = 0
 
@@ -45,8 +45,9 @@ CURRENT_TIME        = 0
 REQUEST_INTERVAL    = 5         # seconds:
 WAIT                = 1000      # milli-seconds:
 
-#host                = 'https://thingspeak.com/'   # Cheerlights API location:
-#topic               = 'channels/1417/feeds/last.json'
+host                = 'https://thingspeak.com/'   # Cheerlights API location:
+topic               = 'channels/1417/feeds/last.json'
+url                 = host + topic
 #port                = 80
 
 
@@ -55,9 +56,9 @@ WAIT                = 1000      # milli-seconds:
 flames = {'red':0, 'orange':11, 'yellow':22, 'green':80, 'cyan':110,
 'blue':165, 'purple':190, 'magenta':224, 'pink':244}
 
-white = {'white':'val_0'}
+white = {'white':0}
 
-warmwhite = {'oldlace':'val_1', 'warmwhite':'val_2'}
+warmwhite = {'oldlace':0, 'warmwhite':0}
 
 
 ###--- definitions ---###
@@ -131,8 +132,35 @@ def hue_transistion():
     pass
 
 # establish connection with API and request payload:
-def api_query():
-    pass
+def api_request():
+    #feed = urequests.get(url)
+    #color = feed.json()['field1']
+    color = 'purple'
+    return color
+
+# determine value for CUR_HUE based on color received from broker and call
+# palette function:
+def recvd_color_test(color):
+    if color in flames:
+        CUR_HUE = flames[color]
+        PALETTE = fl_palette(CUR_HUE)
+
+    elif color in white:
+        CUR_HUE = white[color]
+        PALETTE = wh_palette(CUR_HUE)
+
+    elif color in warmwhite:
+        CUR_HUE = warmwhite[color]
+        PALETTE = wm_palette(CUR_HUE)
+
+    else:
+        #print('Invalid color')
+        pass
+    return PALETTE
+
+# test delay function:
+def test_delay(delay):
+    time.sleep_ms(delay)
 
 ###---  set-up of objects and initializations  ---###
 
@@ -158,33 +186,13 @@ np = neopixel.NeoPixel(machine.Pin(PIXEL_PIN), PIXEL_WIDTH * PIXEL_HEIGHT)
 np.fill((0,0,0))    # Assumes a 3 component neopixel - rgb only
 np.write()
 
-# determine value for CUR_HUE based on color received from broker and call
-# palette function:
-if RECVD_COLOR in flames:
-    CUR_HUE = flames[RECVD_COLOR]
-    PALETTE = fl_palette(CUR_HUE)
-
-elif RECVD_COLOR in white:
-    CUR_HUE = white[RECVD_COLOR]
-    PALETTE = wh_palette(CUR_HUE)
-
-elif RECVD_COLOR in warmwhite:
-    CUR_HUE = warmwhite[RECVD_COLOR]
-    PALETTE = wm_palette(CUR_HUE)
-
-else:
-    #print('Invalid color')
-    pass
-
 # Create fire matrix:
 fire = FireMatrix(PIXEL_WIDTH, PIXEL_HEIGHT+1)  # Adds an extra line to push
                                                 # initial random setting line out
                                                 # of view:
 
-# test delay function:
-def test_delay(delay):
-    time.sleep_ms(delay)
-
+# Initial call to color test to Initiallize animation:
+PALETTE = recvd_color_test(RECVD_COLOR)       # returns PALETTE:
 
 ###---  multi-threaded api call  ---###
 
@@ -216,11 +224,19 @@ while True:
     np.write()
 
     # As these loops run fairly fast, a timing loop is needed to prevent the 
+    # api call being made every time through the while loop.
     CURRENT_TIME = time.time()
     if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
-        test_delay(WAIT)
-        PREVIOUS_MILLIS = CURRENT_MILLIS
-    # api call being made every time through the while loop.
+        #url = 'https://thingspeak.com/channels/1417/feeds/last.json'
+        RECVD_COLOR = 'purple'           #api_request()
+        if RECVD_COLOR != PREV_COLOR:
+            test_delay(1000)
+            #pass
+            #PALETTE = recvd_color_test(RECVD_COLOR)
+            PREV_COLOR = RECVD_COLOR
+        #test_delay(WAIT)
+        PREVIOUS_TIME = CURRENT_TIME
+
     # control loop for the api get request:
         # request the contents of the last cheerlights channel feed:
         # extract the color name as a string and asign to a variable:
