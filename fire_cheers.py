@@ -34,7 +34,7 @@ PIXEL_PIN           = 0
 PIXEL_WIDTH         = 4
 PIXEL_HEIGHT        = 4
 FLAME_DIVISOR       = 16.2
-RECVD_COLOR         = 'orange'
+RECVD_COLOR         = 'cyan'
 PREV_COLOR          = ''
 CUR_HUE             = 0
 PREV_HUE            = 0
@@ -51,7 +51,7 @@ PREV_HUE            = 0
 
 # look-up dicts:
 # colors received from cheerlights API with associated hue values:
-flames = {'red':0, 'orange':10, 'yellow':22, 'green':80, 'cyan':110,
+flames = {'red':0, 'orange':11, 'yellow':22, 'green':80, 'cyan':110,
 'blue':165, 'purple':190, 'magenta':224, 'pink':244}
 
 white = {'white':'val_0'}
