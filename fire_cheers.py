@@ -40,12 +40,13 @@ CUR_HUE             = 0
 PREV_HUE            = 0
 
 # these variables keep track of elapsed time to control the 'request' loop:
-PREVIOUS_MILLIS     = 0
-CURRENT_MILLIS      = 0
-REQUEST_INTERVAL    = 5
-WAIT                = 1000
+PREVIOUS_TIME       = 0
+CURRENT_TIME        = 0
+REQUEST_INTERVAL    = 5         # seconds:
+WAIT                = 1000      # milli-seconds:
 
-#host                = 'api.thingspeak.com/'   # Cheerlights API location:
+#host                = 'https://thingspeak.com/'   # Cheerlights API location:
+#topic               = 'channels/1417/feeds/last.json'
 #port                = 80
 
 
@@ -215,8 +216,8 @@ while True:
     np.write()
 
     # As these loops run fairly fast, a timing loop is needed to prevent the 
-    CURRENT_MILLIS = time.time()
-    if CURRENT_MILLIS - PREVIOUS_MILLIS >= REQUEST_INTERVAL:
+    CURRENT_TIME = time.time()
+    if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
         test_delay(WAIT)
         PREVIOUS_MILLIS = CURRENT_MILLIS
     # api call being made every time through the while loop.
