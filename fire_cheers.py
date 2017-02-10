@@ -143,20 +143,20 @@ def api_request():
 def recvd_color_test(color):
     if color in flames:
         CUR_HUE = flames[color]
-        PALETTE = fl_palette(CUR_HUE)
+        new_palette = fl_palette(CUR_HUE)
 
     elif color in white:
         CUR_HUE = white[color]
-        PALETTE = wh_palette(CUR_HUE)
+        new_palette = wh_palette(CUR_HUE)
 
     elif color in warmwhite:
         CUR_HUE = warmwhite[color]
-        PALETTE = wm_palette(CUR_HUE)
+        new_palette = wm_palette(CUR_HUE)
 
     else:
         #print('Invalid color')
         pass
-    return PALETTE
+    return new_palette
 
 # test delay function:
 def test_delay(delay):
@@ -228,9 +228,9 @@ while True:
     CURRENT_TIME = time.time()
     if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
         #url = 'https://thingspeak.com/channels/1417/feeds/last.json'
-        RECVD_COLOR = 'purple'           #api_request()
         if RECVD_COLOR != PREV_COLOR:
             test_delay(1000)
+            #api_request()
             #pass
             #PALETTE = recvd_color_test(RECVD_COLOR)
             PREV_COLOR = RECVD_COLOR
