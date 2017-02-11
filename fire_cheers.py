@@ -130,7 +130,8 @@ def hue_transistion():
     # transistion from previous to current hue setting:
     pass
 
-# establish connection with API and request payload:
+# establish connection with API and request payload,
+# extract the color name as a string and asign to RECVD_COLOR:
 def api_query():
     pass
 
@@ -158,8 +159,9 @@ np = neopixel.NeoPixel(machine.Pin(PIXEL_PIN), PIXEL_WIDTH * PIXEL_HEIGHT)
 np.fill((0,0,0))    # Assumes a 3 component neopixel - rgb only
 np.write()
 
+##- Define as a fuction: create_palette():
 # determine value for CUR_HUE based on color received from broker and call
-# palette function:
+# palette function. Assign value to PALETTE
 if RECVD_COLOR in flames:
     CUR_HUE = flames[RECVD_COLOR]
     PALETTE = fl_palette(CUR_HUE)
@@ -216,15 +218,14 @@ while True:
     np.write()
 
     # As these loops run fairly fast, a timing loop is needed to prevent the 
-    CURRENT_TIME = time.time()
-    if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
-        test_delay(WAIT)
-        PREVIOUS_MILLIS = CURRENT_MILLIS
     # api call being made every time through the while loop.
     # control loop for the api get request:
-        # request the contents of the last cheerlights channel feed:
-        # extract the color name as a string and asign to a variable:
+    CURRENT_TIME = time.time()
+    if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
+        # request the contents of the last cheerlights channel feed, api_query():
         # compare current (received) color value with previous:
-        # if current value is different, recreate color palette (and run transition):
+        # if current value of RECVD_COLOR has changed, call create_palette():
+        test_delay(WAIT)    # debug:
+        PREVIOUS_MILLIS = CURRENT_MILLIS
 
     time.sleep_ms(50)       # main loop period control:
