@@ -34,7 +34,7 @@ PIXEL_PIN           = 0
 PIXEL_WIDTH         = 4
 PIXEL_HEIGHT        = 4
 FLAME_DIVISOR       = 16.2
-RECVD_COLOR         = 'yellow'
+RECVD_COLOR         = 'red'
 PREV_COLOR          = ''
 CUR_HUE             = 0
 PREV_HUE            = 0
@@ -225,7 +225,7 @@ while True:
         # request the contents of the last cheerlights channel feed, api_query():
         # compare current (received) color value with previous:
         # if current value of RECVD_COLOR has changed, call create_palette():
-        test_delay(WAIT)    # debug:
+        #test_delay(WAIT)    # debug:
         PREVIOUS_MILLIS = CURRENT_MILLIS
 
     time.sleep_ms(50)       # main loop period control:
