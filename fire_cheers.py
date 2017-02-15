@@ -14,18 +14,26 @@
 #       the last 'hex' entry, api.thingspeak.com/channels/1417/field/2/last.json
 #       Once the pages' contents are obtained, the ujson module can be used to
 #       convert the string to a 'dict' object. The relevant value can then be
-#       extracted using 'key' indexing.
-#       A second thread will be used to make a request to the api at a set interval
-#       separate from the main animation 'while' loop and other 'free' running
-#       functions.
+#       extracted using 'key' indexing and the information used to create the
+#       animation frames.
+#       The animation is expected to stutter during the api request as this
+#       request is direct to the cheerlights api using http protocol which will
+#       attain the whole web page icluding the headers.
+#       This script does not use Threading.
 ###--
 
 # modules:
+import gc
 import machine
+gc.collect()
 import neopixel
+gc.collect()
 import uos
+gc.collect()
 import time
+gc.collect()
 import urequests
+gc.collect()
 #import ujson
 #import threading
 
@@ -38,6 +46,7 @@ RECVD_COLOR         = 'red'
 PREV_COLOR          = 'red'
 CUR_HUE             = 0
 PREV_HUE            = 0
+PALETTE             = []
 
 # these variables keep track of elapsed time to control the 'request' loop:
 PREVIOUS_TIME       = 0
@@ -104,6 +113,7 @@ def HSL_to_RGB(h, s, l):
 
 # Create a color palette of flame colors:
 def fl_palette(h_offset):
+    gc.collect()
     palette_fl = []
     for x in range(256):
         palette_fl.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
@@ -112,6 +122,7 @@ def fl_palette(h_offset):
 
 # Create a color palette of white colors:
 def wh_palette(h_offset):
+    gc.collect()
     palette_wh = []
     for x in range(256):
         palette_wh.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
@@ -120,6 +131,7 @@ def wh_palette(h_offset):
 
 # Create a color palette of warm-white colors:
 def wm_palette(h_offset):
+    gc.collect()
     palette_wm = []
     for x in range(256):
         palette_wm.append(HSL_to_RGB(h_offset + (x // 8), 255, min(255, x * 2)))
@@ -132,15 +144,19 @@ def hue_transistion():
     pass
 
 # establish connection with API and request payload:
-def api_request():
-    #feed = urequests.get(url)
-    #color = feed.json()['field1']
-    color = 'purple'
-    return color
+def api_request(url):
+    gc.collect()
+    global RECVD_COLOR
+    feed = urequests.get(url)
+    color = feed.json()['field1']
+    RECVD_COLOR = color
+    #test_delay(1000)
+    return None
 
 # determine value for CUR_HUE based on color received from broker and call
 # palette function:
 def recvd_color_test(color):
+    gc.collect()
     if color in flames:
         CUR_HUE = flames[color]
         new_palette = fl_palette(CUR_HUE)
@@ -156,7 +172,20 @@ def recvd_color_test(color):
     else:
         #print('Invalid color')
         pass
+    gc.collect()
     return new_palette
+
+def make_color_palette(next_color):
+    gc.collect()
+    global PALETTE
+    #PALETTE = []
+    PALETTE = recvd_color_test(next_color)
+    return None
+
+def call_for_change():
+    #global RECVD_COLOR
+    make_color_palette(RECVD_COLOR)
+    return None
 
 # test delay function:
 def test_delay(delay):
@@ -192,7 +221,8 @@ fire = FireMatrix(PIXEL_WIDTH, PIXEL_HEIGHT+1)  # Adds an extra line to push
                                                 # of view:
 
 # Initial call to color test to Initiallize animation:
-PALETTE = recvd_color_test(RECVD_COLOR)       # returns PALETTE:
+#PALETTE = recvd_color_test(RECVD_COLOR)       # returns PALETTE:
+call_for_change()
 
 ###---  multi-threaded api call  ---###
 
@@ -223,24 +253,25 @@ while True:
             np[y * PIXEL_WIDTH + x] = PALETTE[fire.get(x, y)]
     np.write()
 
-    # As these loops run fairly fast, a timing loop is needed to prevent the 
-    # api call being made every time through the while loop.
+
+        # As these loops run fairly fast, a timing loop is needed to prevent the 
+        # api call being made every time through the while loop.
     CURRENT_TIME = time.time()
     if CURRENT_TIME - PREVIOUS_TIME >= REQUEST_INTERVAL:
-        #url = 'https://thingspeak.com/channels/1417/feeds/last.json'
+        #print(RECVD_COLOR)
+        api_request(url)
         if RECVD_COLOR != PREV_COLOR:
-            test_delay(1000)
-            #api_request()
+            #print('new color {0}'.format(RECVD_COLOR))
+            #test_delay(1000)
             #pass
-            #PALETTE = recvd_color_test(RECVD_COLOR)
+            call_for_change()
             PREV_COLOR = RECVD_COLOR
-        #test_delay(WAIT)
         PREVIOUS_TIME = CURRENT_TIME
 
     # control loop for the api get request:
-        # request the contents of the last cheerlights channel feed:
-        # extract the color name as a string and asign to a variable:
-        # compare current (received) color value with previous:
-        # if current value is different, recreate color palette (and run transition):
+    # request the contents of the last cheerlights channel feed:
+    # extract the color name as a string and asign to a variable:
+    # compare current (received) color value with previous:
+    # if current value is different, recreate color palette (and run transition):
 
     time.sleep_ms(50)       # main loop period control:
